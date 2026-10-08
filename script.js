@@ -1,270 +1,222 @@
-document.addEventListener('DOMContentLoaded', () => {
-    initTypingEffect();
-    initThemeToggle();
-    initMobileNavigation();
-    initSkillBarObserver();
-    initProjectFilters();
-    initModals();
-    initFormValidation();
-});
+// Typing effect in hero section
+let phrases = ['Web Apps.', 'Clean UI.', 'Modern Sites.'];
+let pIndex = 0;
+let cIndex = 0;
+let isBackspacing = false;
 
-/* ==========================================================================
-   1. Typing Effect for Subtitle
-   ========================================================================== */
-function initTypingEffect() {
-    const typingElement = document.getElementById('typing-text');
-    const words = ['Web Applications.', 'User Interfaces.', 'Modern Experiences.', 'Clean Code.'];
-    let wordIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-    let typeSpeed = 100;
+function doTyping() {
+  let target = document.getElementById('typeTarget');
+  if (!target) return;
 
-    function type() {
-        const currentWord = words[wordIndex];
+  let currentPhrase = phrases[pIndex];
 
-        if (isDeleting) {
-            typingElement.textContent = currentWord.substring(0, charIndex - 1);
-            charIndex--;
-            typeSpeed = 50;
-        } else {
-            typingElement.textContent = currentWord.substring(0, charIndex + 1);
-            charIndex++;
-            typeSpeed = 100;
-        }
+  if (isBackspacing) {
+    target.textContent = currentPhrase.substring(0, cIndex - 1);
+    cIndex--;
+  } else {
+    target.textContent = currentPhrase.substring(0, cIndex + 1);
+    cIndex++;
+  }
 
-        if (!isDeleting && charIndex === currentWord.length) {
-            typeSpeed = 2000; // Pause at end of word
-            isDeleting = true;
-        } else if (isDeleting && charIndex === 0) {
-            isDeleting = false;
-            wordIndex = (wordIndex + 1) % words.length;
-            typeSpeed = 500;
-        }
+  let delay = isBackspacing ? 50 : 100;
 
-        setTimeout(type, typeSpeed);
+  if (!isBackspacing && cIndex === currentPhrase.length) {
+    delay = 1500;
+    isBackspacing = true;
+  } else if (isBackspacing && cIndex === 0) {
+    isBackspacing = false;
+    pIndex = (pIndex + 1) % phrases.length;
+    delay = 300;
+  }
+
+  setTimeout(doTyping, delay);
+}
+
+// Dark / Light Theme Switcher
+function initTheme() {
+  let btn = document.getElementById('themeBtn');
+  let currentTheme = localStorage.getItem('theme');
+
+  if (currentTheme === 'light') {
+    document.body.classList.add('light');
+    btn.querySelector('i').className = 'fa-solid fa-sun';
+  }
+
+  btn.onclick = function() {
+    let isLight = document.body.classList.toggle('light');
+    if (isLight) {
+      btn.querySelector('i').className = 'fa-solid fa-sun';
+      localStorage.setItem('theme', 'light');
+    } else {
+      btn.querySelector('i').className = 'fa-solid fa-moon';
+      localStorage.setItem('theme', 'dark');
     }
-
-    type();
+  };
 }
 
-/* ==========================================================================
-   2. Theme Toggle (Dark/Light Mode)
-   ========================================================================== */
-function initThemeToggle() {
-    const themeBtn = document.getElementById('theme-toggle');
-    const htmlTag = document.documentElement;
-    const icon = themeBtn.querySelector('i');
+// Mobile Nav Menu Toggle
+function initMobileMenu() {
+  let menuBtn = document.getElementById('menuBtn');
+  let navLinks = document.getElementById('navLinks');
 
-    // Check saved local storage preference
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    htmlTag.setAttribute('data-theme', savedTheme);
-    updateIcon(savedTheme);
+  if (!menuBtn) return;
 
-    themeBtn.addEventListener('click', () => {
-        const currentTheme = htmlTag.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        
-        htmlTag.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateIcon(newTheme);
-    });
+  menuBtn.onclick = function() {
+    navLinks.classList.toggle('show');
+  };
 
-    function updateIcon(theme) {
-        if (theme === 'dark') {
-            icon.className = 'fa-solid fa-moon';
-        } else {
-            icon.className = 'fa-solid fa-sun';
-        }
-    }
-}
-
-/* ==========================================================================
-   3. Mobile Menu Navigation Toggle
-   ========================================================================== */
-function initMobileNavigation() {
-    const mobileToggle = document.getElementById('mobile-toggle');
-    const navMenu = document.getElementById('nav-menu');
-    const navLinks = document.querySelectorAll('.nav-link');
-
-    mobileToggle.addEventListener('click', () => {
-        navMenu.classList.toggle('active');
-        const isOpen = navMenu.classList.contains('active');
-        mobileToggle.querySelector('i').className = isOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
-    });
-
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            navMenu.classList.remove('active');
-            mobileToggle.querySelector('i').className = 'fa-solid fa-bars';
-        });
-    });
-}
-
-/* ==========================================================================
-   4. Intersection Observer for Skill Progress Bars
-   ========================================================================== */
-function initSkillBarObserver() {
-    const skillBars = document.querySelectorAll('.skill-progress');
-
-    const observerOptions = {
-        threshold: 0.5
+  let links = navLinks.getElementsByTagName('a');
+  for (let i = 0; i < links.length; i++) {
+    links[i].onclick = function() {
+      navLinks.classList.remove('show');
     };
-
-    const observer = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const progressBar = entry.target;
-                const targetWidth = progressBar.getAttribute('data-progress');
-                progressBar.style.width = targetWidth;
-                observer.unobserve(progressBar);
-            }
-        });
-    }, observerOptions);
-
-    skillBars.forEach(bar => observer.observe(bar));
+  }
 }
 
-/* ==========================================================================
-   5. Interactive Project Filtering
-   ========================================================================== */
-function initProjectFilters() {
-    const filterBtns = document.querySelectorAll('.filter-btn');
-    const projectCards = document.querySelectorAll('.project-card');
+// Skill bars fill animation when scrolling into view
+function initSkillBars() {
+  let fills = document.querySelectorAll('.fill');
 
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Update Active Class
-            filterBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+  let observer = new IntersectionObserver(function(entries) {
+    for (let i = 0; i < entries.length; i++) {
+      if (entries[i].isIntersecting) {
+        let bar = entries[i].target;
+        bar.style.width = bar.getAttribute('data-val');
+      }
+    }
+  }, { threshold: 0.2 });
 
-            const filterValue = btn.getAttribute('data-filter');
-
-            projectCards.forEach(card => {
-                const category = card.getAttribute('data-category');
-                
-                if (filterValue === 'all' || filterValue === category) {
-                    card.style.display = 'flex';
-                    setTimeout(() => card.style.opacity = '1', 50);
-                } else {
-                    card.style.opacity = '0';
-                    card.style.display = 'none';
-                }
-            });
-        });
-    });
+  for (let i = 0; i < fills.length; i++) {
+    observer.observe(fills[i]);
+  }
 }
 
-/* ==========================================================================
-   6. Modal Dialog System
-   ========================================================================== */
+// Project filtering by category
+function initFilters() {
+  let filterBtns = document.querySelectorAll('.filter-btn');
+  let cards = document.querySelectorAll('.p-card');
+
+  for (let i = 0; i < filterBtns.length; i++) {
+    filterBtns[i].onclick = function() {
+      // Remove active class from all buttons
+      for (let j = 0; j < filterBtns.length; j++) {
+        filterBtns[j].classList.remove('active');
+      }
+      this.classList.add('active');
+
+      let category = this.getAttribute('data-cat');
+
+      for (let k = 0; k < cards.length; k++) {
+        let cardCat = cards[k].getAttribute('data-cat');
+        if (category === 'all' || category === cardCat) {
+          cards[k].style.display = 'flex';
+        } else {
+          cards[k].style.display = 'none';
+        }
+      }
+    };
+  }
+}
+
+// Modal Popups for Projects
 function initModals() {
-    const modalOverlay = document.getElementById('modal-overlay');
-    const modalContent = document.getElementById('modal-content');
-    const modalClose = document.getElementById('modal-close');
-    const openBtns = document.querySelectorAll('.open-modal-btn');
+  let modalBox = document.getElementById('modalBox');
+  let modalTarget = document.getElementById('modalTarget');
+  let closeModal = document.getElementById('closeModal');
 
-    const modalData = {
-        'modal-1': {
-            title: 'Analytics Dashboard',
-            desc: 'Comprehensive web analytics portal featuring live metrics, chart visualizers, user behavior heatmaps, and customizable theme exports.',
-            tech: ['HTML5', 'CSS3', 'JavaScript', 'Chart.js']
-        },
-        'modal-2': {
-            title: 'E-Commerce Glass Interface',
-            desc: 'Modern online store interface with filtering options, interactive shopping cart, instant total calculations, and custom checkout flows.',
-            tech: ['CSS Grid', 'Flexbox', 'JavaScript DOM API']
-        },
-        'modal-3': {
-            title: 'Task Workflow Manager',
-            desc: 'Productivity application with drag-and-drop task organization, priority flags, tag filters, and persistent state management via local storage.',
-            tech: ['JavaScript', 'LocalStorage', 'CSS3 Transitions']
-        }
+  let modalData = {
+    'm1': {
+      title: 'Analytics Dashboard',
+      desc: 'Real-time statistics dashboard featuring live grid cards and chart layout elements.'
+    },
+    'm2': {
+      title: 'E-Commerce Interface',
+      desc: 'Sleek store interface with responsive card layouts and dynamic filter states.'
+    },
+    'm3': {
+      title: 'Task Manager',
+      desc: 'Productivity web app built with task filters and browser local storage saving.'
+    }
+  };
+
+  let openBtns = document.querySelectorAll('.show-modal');
+  for (let i = 0; i < openBtns.length; i++) {
+    openBtns[i].onclick = function() {
+      let id = this.getAttribute('data-id');
+      let data = modalData[id];
+      if (data) {
+        modalTarget.innerHTML = '<h3>' + data.title + '</h3><p style="margin-top: 8px; color: #8b949e;">' + data.desc + '</p>';
+        modalBox.classList.add('open');
+      }
     };
+  }
 
-    openBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const modalKey = btn.getAttribute('data-modal');
-            const data = modalData[modalKey];
+  closeModal.onclick = function() {
+    modalBox.classList.remove('open');
+  };
 
-            if (data) {
-                modalContent.innerHTML = `
-                    <h2>${data.title}</h2>
-                    <p style="margin: 1rem 0; color: var(--text-secondary);">${data.desc}</p>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
-                        ${data.tech.map(t => `<span class="project-tag">${t}</span>`).join('')}
-                    </div>
-                `;
-                modalOverlay.classList.add('active');
-            }
-        });
-    });
-
-    modalClose.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) closeModal();
-    });
-
-    function closeModal() {
-        modalOverlay.classList.remove('active');
+  modalBox.onclick = function(e) {
+    if (e.target === modalBox) {
+      modalBox.classList.remove('open');
     }
+  };
 }
 
-/* ==========================================================================
-   7. Contact Form Live Validation
-   ========================================================================== */
-function initFormValidation() {
-    const form = document.getElementById('contact-form');
-    const nameInput = document.getElementById('name');
-    const emailInput = document.getElementById('email');
-    const messageInput = document.getElementById('message');
-    const formStatus = document.getElementById('form-status');
+// Contact Form Validation
+function initForm() {
+  let form = document.getElementById('contactForm');
+  if (!form) return;
 
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
+  form.onsubmit = function(e) {
+    e.preventDefault();
 
-        let isValid = true;
+    let nameInput = document.getElementById('usrName');
+    let emailInput = document.getElementById('usrEmail');
+    let msgInput = document.getElementById('usrMsg');
+    let alertBox = document.getElementById('formAlert');
 
-        if (nameInput.value.trim() === '') {
-            showError(nameInput);
-            isValid = false;
-        } else {
-            clearError(nameInput);
-        }
+    let isValid = true;
 
-        if (!validateEmail(emailInput.value)) {
-            showError(emailInput);
-            isValid = false;
-        } else {
-            clearError(emailInput);
-        }
-
-        if (messageInput.value.trim() === '') {
-            showError(messageInput);
-            isValid = false;
-        } else {
-            clearError(messageInput);
-        }
-
-        if (isValid) {
-            formStatus.style.color = '#10b981';
-            formStatus.textContent = 'Message sent successfully! Thank you.';
-            form.reset();
-            setTimeout(() => formStatus.textContent = '', 4000);
-        }
-    });
-
-    function showError(input) {
-        input.parentElement.classList.add('invalid');
+    if (!nameInput.value.trim()) {
+      nameInput.parentElement.classList.add('has-error');
+      isValid = false;
+    } else {
+      nameInput.parentElement.classList.remove('has-error');
     }
 
-    function clearError(input) {
-        input.parentElement.classList.remove('invalid');
+    let emailVal = emailInput.value.trim();
+    if (!emailVal || emailVal.indexOf('@') === -1 || emailVal.indexOf('.') === -1) {
+      emailInput.parentElement.classList.add('has-error');
+      isValid = false;
+    } else {
+      emailInput.parentElement.classList.remove('has-error');
     }
 
-    function validateEmail(email) {
-        const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(String(email).toLowerCase());
+    if (!msgInput.value.trim()) {
+      msgInput.parentElement.classList.add('has-error');
+      isValid = false;
+    } else {
+      msgInput.parentElement.classList.remove('has-error');
     }
+
+    if (isValid) {
+      alertBox.style.color = '#238636';
+      alertBox.textContent = 'Message sent!';
+      form.reset();
+      setTimeout(function() {
+        alertBox.textContent = '';
+      }, 3000);
+    }
+  };
 }
 
-
+// Run functions when DOM is ready
+window.onload = function() {
+  doTyping();
+  initTheme();
+  initMobileMenu();
+  initSkillBars();
+  initFilters();
+  initModals();
+  initForm();
+};
